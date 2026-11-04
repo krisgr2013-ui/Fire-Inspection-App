@@ -115,7 +115,7 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase">NFPA Compliance Rate</p>
-                                <h3 class="text-3xl font-bold text-emerald-400 mt-1">98.2%</h3>
+                                <h3 class="text-3xl font-bold text-emerald-400 mt-1" id="stat-compliance-rate">—</h3>
                             </div>
                             <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-xl">
                                 <i class="fa-solid fa-shield-check text-lg"></i>
@@ -126,7 +126,7 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase">Low Stock Parts</p>
-                                <h3 class="text-3xl font-bold text-rose-400 mt-1">2 Items</h3>
+                                <h3 class="text-3xl font-bold text-rose-400 mt-1" id="stat-low-stock">Not configured</h3>
                             </div>
                             <div class="bg-rose-500/10 text-rose-400 p-3 rounded-xl">
                                 <i class="fa-solid fa-triangle-exclamation text-lg"></i>
@@ -137,7 +137,7 @@
 
                 <!-- Recent Dispatches List -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Active & Dispatched Jobs Queue</h3>
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4"><h3 class="text-lg font-bold text-white">Active & Dispatched Jobs Queue</h3><div class="flex gap-2"><button onclick="exportGoldStandardBackup()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold">Export Backup</button><label class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">Import Backup<input type="file" accept="application/json,.json" onchange="importGoldStandardBackup(event)" class="hidden"></label></div></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase text-xs">
@@ -319,34 +319,8 @@
         let currentRole = 'executive';
 
         // Mock database state
-        let jobs = [
-            {
-                id: 'JOB-101',
-                client: 'Selah Sports Bar & Grill',
-                type: 'Kitchen Hood System (NFPA 96 / 17A)',
-                tech: 'Kristopher Ramsey',
-                address: '108 W Main St, Selah, WA',
-                status: 'Dispatched', // Dispatched -> Clocked In -> Completed
-                clockedIn: false,
-                partsUsed: [],
-                laborHours: 0,
-                inspectionSubmitted: false,
-                deficienciesFound: false
-            },
-            {
-                id: 'JOB-102',
-                client: 'Yakima Valley Memorial Hospital Cafeteria',
-                type: 'Fire Extinguishers (NFPA 10)',
-                tech: 'Marcus Vance',
-                address: '2811 Tieton Dr, Yakima, WA',
-                status: 'Dispatched',
-                clockedIn: false,
-                partsUsed: [],
-                laborHours: 0,
-                inspectionSubmitted: false,
-                deficienciesFound: false
-            }
-        ];
+        // Start with a clean workspace; no fictional customer or inspection records.
+        let jobs = [];
 
         function switchRole(role) {
             currentRole = role;
@@ -624,7 +598,7 @@
                 <!-- Deficiencies & Completion -->
                 <div class="space-y-3 border-t border-slate-800 pt-4">
                     <h5 class="text-xs font-bold text-slate-400 uppercase">Deficiency Notes (If Any)</h5>
-                    <textarea id="deficiencyNotes" placeholder="Note any failed components or code violations requiring executive quote generation..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500 h-20"></textarea>
+                    <textarea id="deficiencyNotes" placeholder="Note any failed components or code violations requiring executive quote generation..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500 h-20">${escapeGoldHtml(job.deficiencyNotes || '')}</textarea>
                     
                     <div class="flex justify-end space-x-3 pt-2">
                         <button onclick="submitInspection('${job.id}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg">Submit Inspection & Finish Job</button>
@@ -738,6 +712,117 @@
         addPart = function(id) { originalPart(id); persistGoldStandard(); };
         const originalCancel = cancelJob;
         cancelJob = function(id) { if (confirm('Remove this job from the dispatch queue?')) { originalCancel(id); persistGoldStandard(); } };
+
+        // Gold Standard reliability layer: draft recovery, truthful metrics, reports and backups.
+        function saveInspectionDraft(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) return;
+            job.inspectionAnswers = job.inspectionAnswers || {};
+            document.querySelectorAll('[data-inspection-status]').forEach(el => {
+                const id = el.getAttribute('data-inspection-status');
+                const note = document.querySelector('[data-inspection-note="' + id + '"]');
+                job.inspectionAnswers[id] = { status: el.value, note: note ? note.value : '' };
+            });
+            const notes = document.getElementById('deficiencyNotes');
+            const edition = document.getElementById('inspectionEdition');
+            if (notes) job.deficiencyNotes = notes.value;
+            if (edition) job.inspectionEdition = edition.value;
+            job.draftSavedAt = new Date().toISOString();
+            persistGoldStandard();
+            updateInspectionCounts();
+        }
+        function exportGoldStandardBackup() {
+            const payload = { app: 'Gold Standard', schemaVersion: 1, exportedAt: new Date().toISOString(), jobs };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'gold-standard-backup-' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+        function importGoldStandardBackup(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    if (!data || data.app !== 'Gold Standard' || data.schemaVersion !== 1 || !Array.isArray(data.jobs)) throw new Error('This is not a supported Gold Standard backup.');
+                    if (!confirm('Replace the jobs currently stored on this device with ' + data.jobs.length + ' backup record(s)? Export a backup first if you need to preserve the current data.')) return;
+                    jobs = data.jobs;
+                    persistGoldStandard(); renderAll();
+                    alert('Backup restored on this device.');
+                } catch (err) { alert('Backup could not be imported: ' + err.message); }
+                finally { event.target.value = ''; }
+            };
+            reader.readAsText(file);
+        }
+        function printInspectionReport(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (!job || !job.inspectionSubmitted) { alert('A submitted inspection is required before a report can be printed.'); return; }
+            const answers = job.inspectionAnswers || {};
+            const rows = Object.entries(answers).map(([id,a]) => '<tr><td>' + escapeGoldHtml(id.toUpperCase()) + '</td><td>' + escapeGoldHtml(a.status || '') + '</td><td>' + escapeGoldHtml(a.note || '') + '</td></tr>').join('');
+            const html = '<!doctype html><html><head><meta charset="utf-8"><title>Inspection ' + escapeGoldHtml(job.id) + '</title><style>body{font:14px Arial,sans-serif;color:#172033;margin:32px}h1{margin-bottom:4px}small{color:#555}.meta{line-height:1.8;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #bbb;padding:8px;text-align:left;vertical-align:top}th{background:#eee}.notice{margin-top:22px;padding:12px;border:1px solid #aaa}</style></head><body><h1>Gold Standard</h1><strong>Fire Protection Inspection Report</strong><div class="meta"><b>Job:</b> ' + escapeGoldHtml(job.id) + '<br><b>Customer:</b> ' + escapeGoldHtml(job.client) + '<br><b>Site:</b> ' + escapeGoldHtml(job.address) + '<br><b>Service:</b> ' + escapeGoldHtml(job.type) + '<br><b>Technician:</b> ' + escapeGoldHtml(job.tech) + '<br><b>Completed:</b> ' + escapeGoldHtml(job.completedAt || 'Date not recorded') + '<br><b>Reference edition:</b> ' + escapeGoldHtml(job.inspectionEdition || 'Not specified') + '</div><h2>Inspection results</h2><table><thead><tr><th>Item</th><th>Result</th><th>Technician notes</th></tr></thead><tbody>' + rows + '</tbody></table><div class="notice"><b>Deficiency / closeout notes</b><p>' + escapeGoldHtml(job.deficiencyNotes || 'No additional notes recorded.') + '</p><p><b>Overall status:</b> ' + (job.deficienciesFound ? 'Deficiencies recorded — executive/customer follow-up required' : 'No deficiencies recorded in this checklist') + '</p></div><p><small>Operational record only. This report does not independently certify code compliance. Confirm applicable adopted codes, standards, manufacturer instructions and AHJ requirements.</small></p><script>window.onload=()=>window.print();<\/script></body></html>';
+            const w = window.open('', '_blank');
+            if (!w) { alert('Allow pop-ups to print this report.'); return; }
+            w.document.open(); w.document.write(html); w.document.close();
+        }
+        const originalSubmitInspection = submitInspection;
+        submitInspection = function(jobId) {
+            originalSubmitInspection(jobId);
+            const job = jobs.find(j => j.id === jobId);
+            if (job && job.inspectionSubmitted) { job.completedAt = new Date().toLocaleString(); persistGoldStandard(); }
+        };
+        const originalSelectTechJob = selectTechJob;
+        selectTechJob = function(jobId) {
+            originalSelectTechJob(jobId);
+            const job = jobs.find(j => j.id === jobId);
+            const notes = document.getElementById('deficiencyNotes');
+            if (notes) notes.value = job.deficiencyNotes || '';
+            const ws = document.getElementById('activeJobWorkspace');
+            if (ws && job && job.inspectionSubmitted) {
+                const action = document.createElement('div');
+                action.className = 'flex justify-end';
+                action.innerHTML = '<button onclick="printInspectionReport(\'' + jobId + '\')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">Print Customer Report</button>';
+                ws.appendChild(action);
+            }
+            if (ws && job && !job.inspectionSubmitted) {
+                ws.querySelectorAll('[data-inspection-status], [data-inspection-note], #deficiencyNotes, #inspectionEdition').forEach(el => {
+                    el.addEventListener('change', () => saveInspectionDraft(jobId));
+                    el.addEventListener('input', () => saveInspectionDraft(jobId));
+                });
+            }
+        };
+        const originalDashboardTable = renderDashboardTable;
+        renderDashboardTable = function() {
+            originalDashboardTable();
+            const active = jobs.filter(j => !j.inspectionSubmitted).length;
+            const stat = document.getElementById('stat-active-jobs');
+            if (stat) stat.textContent = active;
+            const pending = jobs.filter(j => j.inspectionSubmitted && j.deficienciesFound).length;
+            const quotes = document.getElementById('stat-pending-quotes');
+            if (quotes) quotes.textContent = pending + ' follow-up' + (pending === 1 ? '' : 's');
+            const compliance = document.getElementById('stat-compliance-rate');
+            if (compliance) compliance.textContent = jobs.length ? Math.round(jobs.filter(j => j.inspectionSubmitted && !j.deficienciesFound).length / Math.max(1,jobs.filter(j => j.inspectionSubmitted).length) * 100) + '%*' : '—';
+            const low = document.getElementById('stat-low-stock');
+            if (low) low.textContent = 'Not configured';
+        };
+        const originalQuotesHub = renderQuotesHub;
+        renderQuotesHub = function() {
+            const container = document.getElementById('executiveQuotesContainer');
+            if (currentRole !== 'executive') { originalQuotesHub(); return; }
+            const flagged = jobs.filter(j => j.inspectionSubmitted && j.deficienciesFound);
+            container.innerHTML = '<div class="space-y-4"><h3 class="text-lg font-bold text-white">Deficiency follow-up queue</h3>' +
+                (flagged.length ? flagged.map(j => '<div class="bg-slate-950 border border-slate-800 p-4 rounded-xl"><div class="flex flex-wrap justify-between gap-3"><div><strong class="text-white">' + escapeGoldHtml(j.client) + '</strong><p class="text-xs text-slate-400">' + escapeGoldHtml(j.id) + ' • ' + escapeGoldHtml(j.type) + '</p><p class="text-sm text-amber-300 mt-2">' + escapeGoldHtml(j.deficiencyNotes || 'Checklist contains failed or deficient items.') + '</p></div><button onclick="selectTechJob(\'' + j.id + '\');switchTab(\'field\')" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-xs">Review inspection</button></div></div>').join('') : '<p class="text-sm text-slate-400">No submitted inspections currently require deficiency follow-up.</p>') +
+                '<p class="text-xs text-slate-500">This queue flags follow-up work; it does not create or send priced quotes. Pricing, approval and customer delivery must be completed by your business.</p></div>';
+        };
+        const originalCreateJob = handleCreateJob;
+        handleCreateJob = function(e) {
+            e.preventDefault();
+            originalCreateJob(e);
+            const job = jobs[jobs.length - 1];
+            if (job) { job.id = 'JOB-' + Date.now().toString().slice(-8); job.createdAt = new Date().toISOString(); persistGoldStandard(); renderAll(); }
+        };
+
         // Initialize view
         renderAll();
     </script>
