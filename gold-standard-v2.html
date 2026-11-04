@@ -232,41 +232,17 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs">
-                            <tr>
-                                <th class="p-3 rounded-l-xl">Part Number / Item</th>
-                                <th class="p-3">Category</th>
-                                <th class="p-3">Warehouse Stock</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3 rounded-r-xl text-right">Unit Price</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800">
-                            <tr>
-                                <td class="p-3 font-medium text-white">AMEX Wet Chemical 1.5gal</td>
-                                <td class="p-3 text-slate-400">Kitchen Suppression</td>
-                                <td class="p-3">14 units</td>
-                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">In Stock</span></td>
-                                <td class="p-3 text-right font-semibold text-amber-400">$145.00</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 font-medium text-white">Fusible Link 360°F (UL Listed)</td>
-                                <td class="p-3 text-slate-400">Kitchen Suppression</td>
-                                <td class="p-3">4 units</td>
-                                <td class="p-3"><span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-xs font-semibold">Low Stock</span></td>
-                                <td class="p-3 text-right font-semibold text-amber-400">$28.50</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 font-medium text-white">ABC Dry Chemical Extinguisher 10lb</td>
-                                <td class="p-3 text-slate-400">Fire Extinguishers</td>
-                                <td class="p-3">22 units</td>
-                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">In Stock</span></td>
-                                <td class="p-3 text-right font-semibold text-amber-400">$62.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-white">Parts catalog & stock control</h3>
+                    <form onsubmit="addInventoryItem(event)" class="grid grid-cols-1 md:grid-cols-5 gap-2">
+                        <input id="invName" required placeholder="Part / item name" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                        <select id="invCategory" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"><option>Kitchen Suppression</option><option>Fire Extinguishers</option><option>Service Supplies</option></select>
+                        <input id="invQty" type="number" min="0" step="1" required placeholder="On hand" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                        <input id="invMin" type="number" min="0" step="1" required placeholder="Reorder at" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                        <button class="bg-amber-500 text-slate-950 rounded-lg px-3 py-2 text-sm font-bold">Add item</button>
+                    </form>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase text-xs"><tr><th class="p-3">Item</th><th class="p-3">Category</th><th class="p-3">On hand</th><th class="p-3">Reorder level</th><th class="p-3">Stock status</th><th class="p-3">Adjustment</th></tr></thead><tbody id="inventoryRows" class="divide-y divide-slate-800"></tbody></table></div>
+                    <p class="text-xs text-slate-500">Inventory is stored in this browser only. Quantities are not shared between devices or technicians until secure cloud sync is implemented.</p>
                 </div>
             </section>
 
@@ -712,6 +688,50 @@
         addPart = function(id) { originalPart(id); persistGoldStandard(); };
         const originalCancel = cancelJob;
         cancelJob = function(id) { if (confirm('Remove this job from the dispatch queue?')) { originalCancel(id); persistGoldStandard(); } };
+
+
+        let inventory = [
+            {id:'GS-P001',name:'Wet chemical agent 1.5 gal (verify brand/model compatibility)',category:'Kitchen Suppression',qty:14,min:5},
+            {id:'GS-P002',name:'Fusible link assortment (verify temperature rating)',category:'Kitchen Suppression',qty:4,min:6},
+            {id:'GS-P003',name:'ABC dry chemical extinguisher 10 lb',category:'Fire Extinguishers',qty:22,min:5}
+        ];
+        const originalPersistInventory = persistGoldStandard;
+        persistGoldStandard = function() {
+            originalPersistInventory();
+            try { localStorage.setItem('gold-standard-inventory-v1', JSON.stringify(inventory)); } catch(e) { console.warn('Inventory save failed',e); }
+        };
+        try { const savedInv=JSON.parse(localStorage.getItem('gold-standard-inventory-v1')||'null'); if(Array.isArray(savedInv)) inventory=savedInv; } catch(e) {}
+        function renderInventory() {
+            const body=document.getElementById('inventoryRows'); if(!body) return;
+            body.innerHTML=inventory.map(item=>'<tr><td class="p-3 font-medium text-white">'+escapeGoldHtml(item.name)+'</td><td class="p-3">'+escapeGoldHtml(item.category)+'</td><td class="p-3">'+item.qty+'</td><td class="p-3">'+item.min+'</td><td class="p-3">'+(item.qty<=item.min?'<span class="text-amber-300 font-bold">Reorder</span>':'<span class="text-emerald-300">In stock</span>')+'</td><td class="p-3"><button onclick="adjustInventory(\''+item.id+'\',-1)" class="px-2 py-1 bg-slate-800 rounded">−</button> <button onclick="adjustInventory(\''+item.id+'\',1)" class="px-2 py-1 bg-slate-800 rounded">+</button></td></tr>').join('');
+            const low=document.getElementById('stat-low-stock'); if(low) low.textContent=inventory.filter(x=>x.qty<=x.min).length;
+            const selector=document.getElementById('partSelect');
+            if(selector) { const selected=selector.value; selector.innerHTML=inventory.map(x=>'<option value="'+escapeGoldHtml(x.id)+'">'+escapeGoldHtml(x.name)+' ('+x.qty+' available)</option>').join(''); if(inventory.some(x=>x.id===selected)) selector.value=selected; }
+        }
+        function addInventoryItem(e) {
+            e.preventDefault();
+            const name=document.getElementById('invName').value.trim(), qty=Number(document.getElementById('invQty').value), min=Number(document.getElementById('invMin').value);
+            if(!name||!Number.isInteger(qty)||!Number.isInteger(min)||qty<0||min<0) { alert('Enter a name and valid whole-number stock quantities.'); return; }
+            inventory.push({id:'GS-'+Date.now(),name,category:document.getElementById('invCategory').value,qty,min});
+            persistGoldStandard(); e.target.reset(); renderInventory();
+        }
+        function adjustInventory(id,delta) {
+            const item=inventory.find(x=>x.id===id); if(!item) return;
+            if(item.qty+delta<0) { alert('Stock cannot go below zero.'); return; }
+            item.qty+=delta; persistGoldStandard(); renderInventory();
+        }
+        const priorAddPart = addPart;
+        addPart = function(jobId) {
+            const id=document.getElementById('partSelect')?.value;
+            const item=inventory.find(x=>x.id===id);
+            if(!item) { alert('Select an inventory item first.'); return; }
+            if(item.qty<1) { alert('No stock available. Replenish inventory before adding this part.'); return; }
+            item.qty-=1;
+            const job=jobs.find(j=>j.id===jobId);
+            if(job) { job.partsUsed=job.partsUsed||[]; job.partsUsed.push(item.name); persistGoldStandard(); selectTechJob(jobId); renderInventory(); }
+        };
+        const previousRenderAll = renderAll;
+        renderAll = function() { previousRenderAll(); renderInventory(); };
 
         // Gold Standard reliability layer: draft recovery, truthful metrics, reports and backups.
         function saveInspectionDraft(jobId) {
