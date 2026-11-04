@@ -5,12 +5,15 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  html-check:
+  html-and-js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate HTML structure
-        run: npx --yes html-validate gold-standard-v2.html --formatter stylish
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate HTML structure and JavaScript syntax
+        run: python .github/scripts/validate_app.py
