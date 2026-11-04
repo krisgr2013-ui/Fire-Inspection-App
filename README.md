@@ -1,0 +1,51 @@
+# Gold Standard
+
+Gold Standard is being developed as a field-first fire-protection service platform, initially limited to kitchen fire-suppression systems and portable fire extinguishers.
+
+## Current status
+
+- `gold-standard-v2.html` is the current browser prototype.
+- The prototype currently stores operational data in browser storage. It is not yet a secure multi-user service.
+- `supabase/schema.sql` is the proposed production database foundation with organization-level row security.
+- No live database, authentication provider, file storage, payment processor, or production hosting has been provisioned.
+
+## Production architecture
+
+- Front end: responsive web app / installable PWA.
+- Authentication and data: Supabase Auth + PostgreSQL with row-level security.
+- Files: private object storage for inspection photos and signatures; signed URLs for access.
+- Hosting: static frontend deployment with environment-specific public configuration.
+- Observability: error reporting, audit events, backups, and restore drills before customer data is used.
+
+## Database setup (owner action required)
+
+1. Create a Supabase project in an account you control.
+2. Open SQL Editor and run `supabase/schema.sql`.
+3. Create the first organization and owner membership using the authenticated owner UUID. Do not expose the service-role key in browser code.
+4. Configure private storage buckets and policies for inspection evidence.
+5. Supply the project URL and anon/public key through deployment environment settings. Never commit secrets.
+
+## Security notes
+
+- Every business record carries an `organization_id`; row-level security scopes records to organization membership.
+- The service-role key is server-only and must never be placed in HTML, JavaScript, or a public repository.
+- User invitations, role changes, organization creation, customer portal access, and storage policies require additional trusted server-side workflows before production.
+- Do not store payment card data. Use a compliant payment provider if payments are added.
+
+## Inspection and compliance disclaimer
+
+Checklist content is an operational aid, not a substitute for the current adopted code, licensed NFPA standards, manufacturer instructions, technician qualifications, or the authority having jurisdiction. Edition references and acceptance criteria must be validated before compliance claims or automated pass/fail certification.
+
+## Release gates
+
+- [ ] Browser and mobile-device QA on supported browsers.
+- [ ] Auth, tenant-isolation, and role-permission tests.
+- [ ] Offline queue, conflict handling, and sync recovery tests.
+- [ ] Photo/signature upload and retention policies.
+- [ ] Database backup and restore test.
+- [ ] Accessibility, privacy, terms, and security review.
+- [ ] Pilot with real technicians using supervised, non-production records first.
+
+## Local preview
+
+Open `gold-standard-v2.html` in a modern browser. The Tailwind browser CDN means an internet connection is needed for the current prototype styling. Do not use the prototype's local storage as the sole record system for business-critical inspections.
