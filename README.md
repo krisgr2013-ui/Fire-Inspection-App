@@ -4,15 +4,15 @@ Gold Standard is being developed as a field-first fire-protection service platfo
 
 ## Current status
 
-- `gold-standard-v2.html` is the current browser prototype.
-- The prototype currently stores operational data in browser storage. It is not yet a secure multi-user service.
+- The new multi-file React + Vite application lives in `src/` and is the active development target.\n- `gold-standard-v2.html` is retained as a legacy prototype/reference, not the current app entry point.
+- The current React app is mobile-first and desktop-responsive, with touch-friendly navigation and local browser storage. It is still a single-device workspace until authentication and cloud synchronization are connected.
 - `supabase/schema.sql` is a proposed production database foundation with organization-level row security and role-scoped policies; it still requires application, migration, and security testing before production use.
 - `.github/workflows/quality.yml` runs HTML parsing and JavaScript syntax checks on pushes and pull requests.
 - No live database, authentication provider, file storage, payment processor, or production hosting has been provisioned.
 
 ## Production architecture
 
-- Front end: responsive web app / installable PWA.
+- Front end: React + Vite responsive web application (mobile-first; desktop sidebar and mobile slide-out navigation).
 - Authentication and data: Supabase Auth + PostgreSQL with row-level security.
 - Files: private object storage for inspection photos and signatures; signed URLs for access.
 - Hosting: static frontend deployment with environment-specific public configuration.
@@ -39,7 +39,7 @@ Checklist content is an operational aid, not a substitute for the current adopte
 
 ## Release gates
 
-- [ ] Browser and mobile-device QA on supported browsers.
+- [ ] Browser and mobile-device QA on supported browsers.\n- [ ] Build and inspect the Vite production bundle.
 - [ ] Auth, tenant-isolation, and role-permission tests.
 - [ ] Offline queue, conflict handling, and sync recovery tests.
 - [ ] Photo/signature upload and retention policies.
@@ -49,4 +49,4 @@ Checklist content is an operational aid, not a substitute for the current adopte
 
 ## Local preview
 
-Open `gold-standard-v2.html` in a modern browser. The Tailwind browser CDN means an internet connection is needed for the current prototype styling. Do not use the prototype's local storage as the sole record system for business-critical inspections.
+Install Node.js 22 or later, run `npm install`, then `npm run dev` for local development or `npm run build` to create the production bundle in `dist/`. The legacy HTML prototype is not the active entry point. Do not use browser-local storage as the sole record system for business-critical inspections.
