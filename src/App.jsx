@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState}from'react';
-import{ShieldCheck,LayoutDashboard,Users,MapPin,ClipboardCheck,CalendarDays,Package,AlertTriangle,FileText,Menu,X,Plus,Search,Download,Upload,Printer,Trash2,CheckCircle2,FlameExtinguisher,ChefHat,Building2,ArrowUpRight,Clock,Boxes}from'lucide-react';
+import{ShieldCheck,LayoutDashboard,Users,MapPin,ClipboardCheck,CalendarDays,Package,AlertTriangle,FileText,Menu,X,Plus,Search,Download,Upload,Printer,Trash2,CheckCircle2,ChefHat,ArrowUpRight,Boxes}from'lucide-react';
 import{loadData,saveData,uid,exportData,importData}from'./data.js';
 const nav=[['dashboard','Overview',LayoutDashboard],['customers','Customers',Users],['sites','Sites',MapPin],['assets','Equipment',ShieldCheck],['jobs','Jobs & Dispatch',CalendarDays],['inspections','Inspections',ClipboardCheck],['deficiencies','Deficiencies',AlertTriangle],['inventory','Inventory',Package],['quotes','Quotes',FileText]];
 const blank={customers:{name:'',email:'',phone:''},sites:{name:'',address:'',customerId:''},assets:{kind:'kitchen_suppression',tag:'',manufacturer:'',model:'',serial:'',siteId:''},jobs:{title:'',kind:'kitchen_suppression',customerId:'',siteId:'',assignedTo:'',scheduled:'',status:'Scheduled'},inventory:{name:'',category:'Kitchen Suppression',sku:'',quantity:'0',reorder:'0'},quotes:{customerId:'',description:'',amount:''}};
