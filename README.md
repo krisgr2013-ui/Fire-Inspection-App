@@ -6,7 +6,8 @@ Gold Standard is being developed as a field-first fire-protection service platfo
 
 - `gold-standard-v2.html` is the current browser prototype.
 - The prototype currently stores operational data in browser storage. It is not yet a secure multi-user service.
-- `supabase/schema.sql` is the proposed production database foundation with organization-level row security.
+- `supabase/schema.sql` is a proposed production database foundation with organization-level row security and role-scoped policies; it still requires application, migration, and security testing before production use.
+- `.github/workflows/quality.yml` runs HTML parsing and JavaScript syntax checks on pushes and pull requests.
 - No live database, authentication provider, file storage, payment processor, or production hosting has been provisioned.
 
 ## Production architecture
@@ -21,7 +22,7 @@ Gold Standard is being developed as a field-first fire-protection service platfo
 
 1. Create a Supabase project in an account you control.
 2. Open SQL Editor and run `supabase/schema.sql`.
-3. Create the first organization and owner membership using the authenticated owner UUID. Do not expose the service-role key in browser code.
+3. After signing in, call `public.create_organization_with_owner('Your Company Name')` from the authenticated client to create the first organization and owner membership atomically. Do not expose the service-role key in browser code.
 4. Configure private storage buckets and policies for inspection evidence.
 5. Supply the project URL and anon/public key through deployment environment settings. Never commit secrets.
 
@@ -29,7 +30,7 @@ Gold Standard is being developed as a field-first fire-protection service platfo
 
 - Every business record carries an `organization_id`; row-level security scopes records to organization membership.
 - The service-role key is server-only and must never be placed in HTML, JavaScript, or a public repository.
-- User invitations, role changes, organization creation, customer portal access, and storage policies require additional trusted server-side workflows before production.
+- User invitations, role changes, customer portal access, and storage policies require additional trusted server-side workflows before production. Organization bootstrap is provided by `create_organization_with_owner`.
 - Do not store payment card data. Use a compliant payment provider if payments are added.
 
 ## Inspection and compliance disclaimer
