@@ -631,6 +631,7 @@
                     </div>
                 </div>
             `;
+            updateInspectionCounts();
         }
 
         function escapeGoldHtml(value) {
@@ -668,6 +669,8 @@
         function submitInspection(jobId) {
             const job = jobs.find(j => j.id === jobId);
             if (!job.clockedIn) { alert('Clock into this job before submitting the inspection.'); return; }
+            const unanswered = Array.from(document.querySelectorAll('[data-inspection-status]')).filter(el => !el.value);
+            if (unanswered.length) { alert('Complete every inspection result or mark it N/A before submitting. ' + unanswered.length + ' item(s) remain unanswered.'); unanswered[0].focus(); return; }
             const notes = document.getElementById('deficiencyNotes')?.value?.trim() || '';
             job.deficiencyNotes = notes;
             job.inspectionEdition = document.getElementById('inspectionEdition')?.value?.trim() || 'Not specified';
