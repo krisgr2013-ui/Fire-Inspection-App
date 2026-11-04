@@ -467,68 +467,116 @@
             const job = jobs.find(j => j.id === jobId);
             const ws = document.getElementById('activeJobWorkspace');
             
-            let inspectionFormHTML = '';
-            if (job.type.includes('Kitchen Hood')) {
-                inspectionFormHTML = `
-                    <div class="space-y-4 border-t border-slate-800 pt-4">
-                        <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Kitchen Suppression System Checklist (NFPA 96 / 17A)</h4>
-                        <div class="space-y-3 text-sm">
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Fusible links inspected and within 12-month replacement interval.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Remote manual pull station accessible, secured, and properly tagged.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Gas and electric fuel shut-off interlocks tested and verified functional.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Plenum, filters, and duct collars clean of grease buildup.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Nozzle alignment verified over appliances (fryers, griddles, ranges).</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Wet chemical cylinder pressure gauge in green zone; hydro test date valid.</span>
-                            </label>
+            const isKitchen = job.type.includes('Kitchen Hood');
+            const inspectionStandard = isKitchen ? 'NFPA 17A / NFPA 96' : 'NFPA 10';
+            const questionBank = isKitchen ? [
+                ['SYSTEM IDENTIFICATION & DOCUMENTATION','17A • system records','Is the system manufacturer, model, serial number, and protected hazard documented?'],
+                ['SYSTEM IDENTIFICATION & DOCUMENTATION','17A • system records','Does the installed system configuration match the approved design and manufacturer documentation available on site?'],
+                ['SYSTEM IDENTIFICATION & DOCUMENTATION','17A • service history','Are prior inspection, maintenance, recharge, and repair records available and reviewed?'],
+                ['SYSTEM IDENTIFICATION & DOCUMENTATION','17A • impairment','Are any impairments, bypasses, or out-of-service conditions identified, documented, and communicated to the responsible party?'],
+                ['DETECTION & ACTUATION','17A • detection','Are detector links or other detection devices present, correctly located, and free from damage or contamination?'],
+                ['DETECTION & ACTUATION','17A • detection','Are fusible links within the replacement interval specified by the system manufacturer and applicable adopted requirements?'],
+                ['DETECTION & ACTUATION','17A • detection','Are detector brackets, supports, and positioning secure and consistent with the system design?'],
+                ['DETECTION & ACTUATION','17A • actuation','Are actuation components, cables, pulleys, and conduit free of kinks, corrosion, obstruction, or visible damage?'],
+                ['DETECTION & ACTUATION','17A • manual release','Is the manual release accessible, clearly identified, unobstructed, and properly mounted?'],
+                ['DETECTION & ACTUATION','17A • manual release','Do manual actuation components show no evidence of tampering or unauthorized modification?'],
+                ['CYLINDER & AGENT','17A • agent container','Is the agent cylinder securely mounted and free of corrosion, dents, leakage, or other visible damage?'],
+                ['CYLINDER & AGENT','17A • pressure / weight','Are pressure, weight, and fill indicators within the manufacturer’s specified acceptable range?'],
+                ['CYLINDER & AGENT','17A • service dates','Are cylinder service, recharge, and hydrostatic test dates current for the cylinder type and applicable requirements?'],
+                ['CYLINDER & AGENT','17A • agent condition','Is the extinguishing agent identified, correct for the system, and supported by service documentation?'],
+                ['PIPING, NOZZLES & PROTECTION','17A • distribution piping','Are distribution piping, fittings, and supports secure and free of visible damage, corrosion, or leakage?'],
+                ['PIPING, NOZZLES & PROTECTION','17A • nozzles','Are all required nozzles present, correctly oriented, securely mounted, and unobstructed?'],
+                ['PIPING, NOZZLES & PROTECTION','17A • nozzle caps','Are nozzle caps or blow-off devices present where required and free to operate as designed?'],
+                ['PIPING, NOZZLES & PROTECTION','17A • appliance coverage','Does nozzle placement and appliance coverage appear consistent with the approved system layout and manufacturer instructions?'],
+                ['PIPING, NOZZLES & PROTECTION','17A • changes to hazard','Have cooking appliances, positions, or fuel sources changed since the system was designed or last serviced?'],
+                ['FUEL & ELECTRICAL INTERLOCKS','17A • fuel shutoff','Are fuel shutoff devices and linkages present, accessible, and in serviceable condition?'],
+                ['FUEL & ELECTRICAL INTERLOCKS','17A • electrical shutdown','Are electrical shutdown interfaces and connected controls identified and in serviceable condition?'],
+                ['FUEL & ELECTRICAL INTERLOCKS','17A • functional interface','Has the required shutdown / interlock function been verified using the approved test procedure, with results recorded?'],
+                ['HOOD, FILTERS & EXHAUST','96 • hood','Is the hood assembly intact and free of visible damage or unauthorized modification?'],
+                ['HOOD, FILTERS & EXHAUST','96 • grease filters','Are grease removal devices present, correctly installed, and free of excessive grease accumulation or damage?'],
+                ['HOOD, FILTERS & EXHAUST','96 • exhaust duct','Are accessible exhaust duct sections and access panels in serviceable condition, secured, and not visibly leaking grease?'],
+                ['HOOD, FILTERS & EXHAUST','96 • cleaning','Are cleaning records available and is the observed grease condition consistent with the required cleaning frequency?'],
+                ['HOOD, FILTERS & EXHAUST','96 • fan','Are exhaust fan components, hinge kits, access, and electrical connections visibly serviceable?'],
+                ['HOOD, FILTERS & EXHAUST','96 • discharge','Is the exhaust discharge area free of visible obstruction and conditions that could compromise safe operation?'],
+                ['KITCHEN HAZARD & HOUSEKEEPING','96 • clearance','Are required clearances from cooking appliances to nearby combustible construction maintained, based on approved documentation?'],
+                ['KITCHEN HAZARD & HOUSEKEEPING','96 • cooking equipment','Do cooking appliances and their arrangement match the protected hazard configuration?'],
+                ['KITCHEN HAZARD & HOUSEKEEPING','96 • solid fuel','Where solid-fuel cooking is present, are the applicable special protection, cleaning, and operating provisions addressed?'],
+                ['CLOSEOUT & CUSTOMER COMMUNICATION','17A / 96 • labels','Are system operating instructions, warning labels, and identification markings present and legible?'],
+                ['CLOSEOUT & CUSTOMER COMMUNICATION','17A / 96 • records','Have all test results, deficiencies, corrective actions, and recommendations been recorded for the customer?']
+            ] : [
+                ['EXTINGUISHER IDENTIFICATION','10 • selection','Is the extinguisher type and rating appropriate for the hazard and area being protected?'],
+                ['EXTINGUISHER IDENTIFICATION','10 • location','Is the extinguisher located in its designated position and readily identifiable?'],
+                ['EXTINGUISHER IDENTIFICATION','10 • access','Is the extinguisher visible, accessible, and free from obstruction?'],
+                ['EXTINGUISHER IDENTIFICATION','10 • travel distance','Does the observed placement appear consistent with the approved layout and applicable travel-distance requirements?'],
+                ['EXTINGUISHER IDENTIFICATION','10 • mounting','Is the extinguisher properly mounted or located in an approved cabinet or bracket?'],
+                ['PHYSICAL CONDITION','10 • cylinder','Is the cylinder free of corrosion, dents, bulges, leakage, or other visible damage?'],
+                ['PHYSICAL CONDITION','10 • finish','Are the body, label, and operating instructions legible and in serviceable condition?'],
+                ['PHYSICAL CONDITION','10 • hose','Is the hose free of cracks, cuts, deterioration, blockage, or other damage?'],
+                ['PHYSICAL CONDITION','10 • nozzle','Is the nozzle or horn present, unobstructed, and free of damage?'],
+                ['PHYSICAL CONDITION','10 • handle','Are the carrying handle, lever, and operating mechanism free of visible damage?'],
+                ['PHYSICAL CONDITION','10 • pin and seal','Is the safety pin correctly installed and the tamper seal intact?'],
+                ['PHYSICAL CONDITION','10 • gauge','For applicable stored-pressure units, is the pressure indicator within the manufacturer’s acceptable range?'],
+                ['PHYSICAL CONDITION','10 • weight','Where applicable, does the recorded gross weight meet the manufacturer’s required weight?'],
+                ['PHYSICAL CONDITION','10 • condition','Is there evidence of discharge, tampering, missing parts, or other signs the unit may have been used?'],
+                ['SERVICE & TEST HISTORY','10 • inspection record','Is the inspection tag or electronic service record present and legible?'],
+                ['SERVICE & TEST HISTORY','10 • annual maintenance','Is annual maintenance current and documented by an appropriately qualified service provider?'],
+                ['SERVICE & TEST HISTORY','10 • internal examination','Where applicable, is the six-year maintenance / internal examination status current and documented?'],
+                ['SERVICE & TEST HISTORY','10 • hydrostatic test','Is the hydrostatic test date current for the extinguisher type and cylinder requirements?'],
+                ['SERVICE & TEST HISTORY','10 • recharge','Where applicable, is recharge status current and supported by service records?'],
+                ['SERVICE & TEST HISTORY','10 • electronic monitoring','Where electronic monitoring is used, is the device status and required manual inspection evidence documented?'],
+                ['INSTALLATION & HAZARD','10 • signage','Are location signs or identification markings present where needed for ready identification?'],
+                ['INSTALLATION & HAZARD','10 • environment','Is the extinguisher suitable for the environmental conditions where it is installed?'],
+                ['INSTALLATION & HAZARD','10 • exposure','Is the unit protected from likely physical damage, weather, or corrosive exposure as applicable?'],
+                ['INSTALLATION & HAZARD','10 • special hazards','Are special hazards or changes in occupancy identified that may require a different extinguisher type or placement?'],
+                ['CLOSEOUT & CUSTOMER COMMUNICATION','10 • records','Are inspection findings, service performed, and recommendations recorded?']
+            ];
+            const savedAnswers = job.inspectionAnswers || {};
+            const statusOptions = ['Pass','Fail','Deficient','N/A'];
+            const inspectionFormHTML = `
+                <div class="space-y-4 border-t border-slate-800 pt-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Detailed ${inspectionStandard} Inspection</h4>
+                            <p class="text-xs text-slate-400 mt-1">${questionBank.length} inspection prompts • Select a result for every applicable item</p>
                         </div>
+                        <label class="text-xs text-slate-400">Applicable edition / jurisdiction
+                            <input id="inspectionEdition" value="${job.inspectionEdition || 'Confirm AHJ-adopted edition'}" class="block mt-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs w-64 max-w-full">
+                        </label>
                     </div>
-                `;
-            } else {
-                inspectionFormHTML = `
-                    <div class="space-y-4 border-t border-slate-800 pt-4">
-                        <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Fire Extinguisher Inspection Checklist (NFPA 10)</h4>
-                        <div class="space-y-3 text-sm">
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Pressure gauge reading in operational green range.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Safety pin and tamper seal intact and unobstructed.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Hose and nozzle free of cracking, blockage, or insect nesting.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Annual maintenance tag and 6-year internal examination dates verified.</span>
-                            </label>
-                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
-                                <span>Wall mounting bracket secure and extinguisher visible / unobstructed.</span>
-                            </label>
-                        </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs" id="inspectionStatusSummary">
+                        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">Pass: <strong id="countPass">0</strong></div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">Fail: <strong id="countFail">0</strong></div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">Deficient: <strong id="countDeficient">0</strong></div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">N/A: <strong id="countNA">0</strong></div>
                     </div>
-                `;
-            }
+                    <div class="space-y-4">
+                        ${questionBank.map((q, i) => {
+                            const id = 'q' + (i + 1);
+                            const saved = savedAnswers[id] || {};
+                            return `
+                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                                    <div class="flex flex-wrap justify-between gap-2">
+                                        <span class="text-xs text-amber-400 font-bold">${q[0]} • ${q[1]}</span>
+                                        <span class="text-xs text-slate-500">Item ${i + 1} / ${questionBank.length}</span>
+                                    </div>
+                                    <p class="text-sm text-slate-100">${q[2]}</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <label class="text-xs text-slate-400">Inspection result
+                                            <select data-inspection-status="${id}" onchange="updateInspectionCounts()" class="block mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white">
+                                                <option value="">Select result…</option>
+                                                ${statusOptions.map(st => `<option value="${st}" ${saved.status === st ? 'selected' : ''}>${st}</option>`).join('')}
+                                            </select>
+                                        </label>
+                                        <label class="text-xs text-slate-400">Technician notes / measurements
+                                            <input data-inspection-note="${id}" value="${escapeGoldHtml(saved.note || '')}" placeholder="Record observations, readings, or corrective action" class="block mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white">
+                                        </label>
+                                    </div>
+                                </div>`;
+                        }).join('')}
+                    </div>
+                    <p class="text-xs text-slate-500">Prompts are operational inspection aids, not a substitute for the licensed standard, manufacturer instructions, adopted code, or AHJ direction. Confirm the applicable edition and clause references before relying on a checklist for compliance certification.</p>
+                </div>
+            `;
 
             ws.innerHTML = `
                 <div class="flex justify-between items-start border-b border-slate-800 pb-4">
@@ -585,6 +633,17 @@
             `;
         }
 
+        function escapeGoldHtml(value) {
+            return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+        function updateInspectionCounts() {
+            const statuses = Array.from(document.querySelectorAll('[data-inspection-status]')).map(el => el.value);
+            const counts = { Pass: 0, Fail: 0, Deficient: 0, 'N/A': 0 };
+            statuses.forEach(st => { if (Object.prototype.hasOwnProperty.call(counts, st)) counts[st]++; });
+            const targets = { Pass:'countPass', Fail:'countFail', Deficient:'countDeficient', 'N/A':'countNA' };
+            Object.entries(targets).forEach(([st,id]) => { const el=document.getElementById(id); if(el) el.textContent=counts[st]; });
+        }
+
         function clockIn(jobId) {
             const job = jobs.find(j => j.id === jobId);
             job.clockedIn = true;
@@ -611,8 +670,15 @@
             if (!job.clockedIn) { alert('Clock into this job before submitting the inspection.'); return; }
             const notes = document.getElementById('deficiencyNotes')?.value?.trim() || '';
             job.deficiencyNotes = notes;
-            job.deficienciesFound = Boolean(notes);
-            job.checklist = Array.from(document.querySelectorAll('#activeJobWorkspace input[type="checkbox"]')).map((el, i) => ({ item: el.parentElement?.innerText?.trim() || 'Checklist item ' + (i + 1), passed: el.checked }));
+            job.inspectionEdition = document.getElementById('inspectionEdition')?.value?.trim() || 'Not specified';
+            job.inspectionAnswers = {};
+            document.querySelectorAll('[data-inspection-status]').forEach(el => {
+                const id = el.getAttribute('data-inspection-status');
+                const note = document.querySelector('[data-inspection-note="' + id + '"]')?.value?.trim() || '';
+                job.inspectionAnswers[id] = { status: el.value, note };
+            });
+            job.checklist = Object.entries(job.inspectionAnswers).map(([id, answer]) => ({ id, ...answer }));
+            job.deficienciesFound = Boolean(notes) || job.checklist.some(x => x.status === 'Fail' || x.status === 'Deficient');
             job.status = 'Completed / Pending Executive Review';
             job.inspectionSubmitted = true;
             persistGoldStandard();
