@@ -608,9 +608,15 @@
 
         function submitInspection(jobId) {
             const job = jobs.find(j => j.id === jobId);
+            if (!job.clockedIn) { alert('Clock into this job before submitting the inspection.'); return; }
+            const notes = document.getElementById('deficiencyNotes')?.value?.trim() || '';
+            job.deficiencyNotes = notes;
+            job.deficienciesFound = Boolean(notes);
+            job.checklist = Array.from(document.querySelectorAll('#activeJobWorkspace input[type="checkbox"]')).map((el, i) => ({ item: el.parentElement?.innerText?.trim() || 'Checklist item ' + (i + 1), passed: el.checked }));
             job.status = 'Completed / Pending Executive Review';
             job.inspectionSubmitted = true;
-            alert('Inspection submitted successfully and locked for executive review!');
+            persistGoldStandard();
+            alert('Inspection submitted and saved for executive review!');
             switchTab('dashboard');
             renderAll();
         }
@@ -644,6 +650,25 @@
             renderAll();
         }
 
+        // Persist Gold Standard work locally on this device between sessions.
+        function persistGoldStandard() {
+            try { localStorage.setItem('gold-standard-state-v1', JSON.stringify({ jobs })); }
+            catch (err) { console.warn('Gold Standard could not save locally:', err); }
+        }
+        try {
+            const saved = JSON.parse(localStorage.getItem('gold-standard-state-v1') || 'null');
+            if (saved && Array.isArray(saved.jobs)) jobs = saved.jobs;
+        } catch (err) { console.warn('Saved Gold Standard data could not be read:', err); }
+        const originalCreate = handleCreateJob;
+        handleCreateJob = function(e) { originalCreate(e); persistGoldStandard(); };
+        const originalClockIn = clockIn;
+        clockIn = function(id) { originalClockIn(id); persistGoldStandard(); };
+        const originalLabor = saveLabor;
+        saveLabor = function(id) { originalLabor(id); persistGoldStandard(); };
+        const originalPart = addPart;
+        addPart = function(id) { originalPart(id); persistGoldStandard(); };
+        const originalCancel = cancelJob;
+        cancelJob = function(id) { if (confirm('Remove this job from the dispatch queue?')) { originalCancel(id); persistGoldStandard(); } };
         // Initialize view
         renderAll();
     </script>
