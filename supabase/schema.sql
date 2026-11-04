@@ -38,3 +38,129 @@ create policy org_read on public.organizations for select to authenticated using
 create policy member_read on public.organization_members for select to authenticated using (public.is_org_member(organization_id));
 create policy org_admin_members on public.organization_members for all to authenticated using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[])) with check (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
 do $$ declare t text; begin foreach t in array array['customers','sites','assets','service_jobs','inspections','inspection_responses','deficiencies','inventory_items','inventory_transactions','quotes','quote_lines','audit_events'] loop execute format('alter table public.%I enable row level security',t); execute format('create policy tenant_select on public.%I for select to authenticated using (public.is_org_member(organization_id))',t); execute format('create policy tenant_insert on public.%I for insert to authenticated with check (public.has_org_role(organization_id,array[''owner'',''admin'',''dispatcher'',''technician'']::public.member_role[]))',t); execute format('create policy tenant_update on public.%I for update to authenticated using (public.has_org_role(organization_id,array[''owner'',''admin'',''dispatcher'',''technician'']::public.member_role[])) with check (public.has_org_role(organization_id,array[''owner'',''admin'',''dispatcher'',''technician'']::public.member_role[]))',t); execute format('create policy tenant_delete on public.%I for delete to authenticated using (public.has_org_role(organization_id,array[''owner'',''admin'']::public.member_role[]))',t); end loop; end $$;
+
+-- Safe first-organization bootstrap: a signed-in user can create an organization
+-- and become its owner in one transaction, without opening membership writes.
+create or replace function public.create_organization_with_owner(org_name text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare new_org uuid;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  if length(trim(coalesce(org_name,''))) < 2 then raise exception 'Organization name is required'; end if;
+  insert into public.organizations(name) values (trim(org_name)) returning id into new_org;
+  insert into public.organization_members(organization_id,user_id,role)
+    values (new_org,auth.uid(),'owner');
+  return new_org;
+end;
+$$;
+revoke all on function public.create_organization_with_owner(text) from public;
+grant execute on function public.create_organization_with_owner(text) to authenticated;
+
+-- Replace broad write policies with least-privilege role grants by record type.
+do $$ declare t text; begin
+  foreach t in array array['customers','sites','assets','service_jobs','inspections','inspection_responses','deficiencies','inventory_items','inventory_transactions','quotes','quote_lines','audit_events'] loop
+    execute format('drop policy if exists tenant_insert on public.%I',t);
+    execute format('drop policy if exists tenant_update on public.%I',t);
+    execute format('drop policy if exists tenant_delete on public.%I',t);
+  end loop;
+end $$;
+
+create policy customer_insert on public.customers for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy customer_update on public.customers for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy customer_delete on public.customers for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy site_insert on public.sites for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy site_update on public.sites for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy site_delete on public.sites for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy asset_insert on public.assets for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy asset_update on public.assets for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy asset_delete on public.assets for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy job_insert on public.service_jobs for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy job_update on public.service_jobs for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy job_delete on public.service_jobs for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy inspection_insert on public.inspections for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy inspection_update on public.inspections for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy inspection_delete on public.inspections for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy response_insert on public.inspection_responses for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy response_update on public.inspection_responses for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy response_delete on public.inspection_responses for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy deficiency_insert on public.deficiencies for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy deficiency_update on public.deficiencies for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy deficiency_delete on public.deficiencies for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy inventory_insert on public.inventory_items for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy inventory_update on public.inventory_items for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy inventory_delete on public.inventory_items for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy inventory_tx_insert on public.inventory_transactions for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy inventory_tx_update on public.inventory_transactions for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+create policy inventory_tx_delete on public.inventory_transactions for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy quote_insert on public.quotes for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy quote_update on public.quotes for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy quote_delete on public.quotes for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy quote_line_insert on public.quote_lines for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy quote_line_update on public.quote_lines for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher']::public.member_role[]));
+create policy quote_line_delete on public.quote_lines for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+
+create policy audit_insert on public.audit_events for insert to authenticated
+  with check (public.has_org_role(organization_id,array['owner','admin','dispatcher','technician']::public.member_role[]));
+create policy audit_update on public.audit_events for update to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]))
+  with check (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
+create policy audit_delete on public.audit_events for delete to authenticated
+  using (public.has_org_role(organization_id,array['owner','admin']::public.member_role[]));
