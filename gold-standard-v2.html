@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Standard - Fire Protection Management Suite</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation / Role Switcher Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="bg-amber-500 text-slate-950 p-2 rounded-lg font-black text-xl flex items-center justify-center">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">GOLD STANDARD</h1>
+                <p class="text-xs text-amber-400 font-medium tracking-wide uppercase">Fire Protection & Compliance Suite</p>
+            </div>
+        </div>
+
+        <!-- Role Switcher & User Status -->
+        <div class="flex items-center space-x-4">
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center space-x-2">
+                <span class="text-xs text-slate-400">Current Role:</span>
+                <select id="roleSelector" onchange="switchRole(this.value)" class="bg-slate-900 text-amber-400 font-semibold text-sm px-2 py-1 rounded border border-slate-600 focus:outline-none">
+                    <option value="executive">Executive / Scheduler (Full Access)</option>
+                    <option value="technician">Field Technician (Restricted Field View)</option>
+                </select>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <div class="h-3 w-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span id="currentUserLabel" class="text-sm font-medium text-slate-300">Logged in as Executive</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900/80 border-r border-slate-800 flex flex-col p-4 space-y-2">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Navigation</p>
+            
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span>Executive Dashboard</span>
+            </button>
+
+            <button onclick="switchTab('dispatch')" id="nav-dispatch" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <i class="fa-solid fa-clipboard-list w-5"></i>
+                <span>Jobs & Dispatch</span>
+            </button>
+
+            <button onclick="switchTab('field')" id="nav-field" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <i class="fa-solid fa-helmet-safety w-5"></i>
+                <span>Technician Portal</span>
+            </button>
+
+            <button onclick="switchTab('quotes')" id="nav-quotes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <i class="fa-solid fa-file-invoice-dollar w-5"></i>
+                <span>Quotes & Invoicing</span>
+            </button>
+
+            <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                <i class="fa-solid fa-boxes-stacked w-5"></i>
+                <span>Inventory & Parts</span>
+            </button>
+        </aside>
+
+        <!-- Dynamic Content Panel -->
+        <main class="flex-1 overflow-y-auto p-8 bg-slate-950">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Executive Command Center</h2>
+                        <p class="text-sm text-slate-400">Overview of company dispatch, compliance metrics, and financials.</p>
+                    </div>
+                    <button onclick="openNewJobModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Create & Dispatch Job</span>
+                    </button>
+                </div>
+
+                <!-- KPI Metric Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase">Active Dispatches</p>
+                                <h3 id="stat-active-jobs" class="text-3xl font-bold text-white mt-1">3</h3>
+                            </div>
+                            <div class="bg-blue-500/10 text-blue-400 p-3 rounded-xl">
+                                <i class="fa-solid fa-truck-fast text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase">Pending Quotes</p>
+                                <h3 id="stat-pending-quotes" class="text-3xl font-bold text-amber-400 mt-1">$4,850</h3>
+                            </div>
+                            <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl">
+                                <i class="fa-solid fa-file-invoice text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase">NFPA Compliance Rate</p>
+                                <h3 class="text-3xl font-bold text-emerald-400 mt-1">98.2%</h3>
+                            </div>
+                            <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-xl">
+                                <i class="fa-solid fa-shield-check text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase">Low Stock Parts</p>
+                                <h3 class="text-3xl font-bold text-rose-400 mt-1">2 Items</h3>
+                            </div>
+                            <div class="bg-rose-500/10 text-rose-400 p-3 rounded-xl">
+                                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Dispatches List -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Active & Dispatched Jobs Queue</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Job ID / Client</th>
+                                    <th class="p-3">Inspection Type</th>
+                                    <th class="p-3">Assigned Technician</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 rounded-r-xl text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardJobTable" class="divide-y divide-slate-800">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: JOBS & DISPATCH (Executive / Scheduler) -->
+            <section id="tab-dispatch" class="space-y-6 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Job Scheduling & Dispatch</h2>
+                        <p class="text-sm text-slate-400">Create new service tickets and assign certified technicians.</p>
+                    </div>
+                    <button onclick="openNewJobModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm transition">
+                        + New Service Ticket
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <div class="space-y-4" id="dispatchJobsList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: TECHNICIAN FIELD PORTAL -->
+            <section id="tab-field" class="space-y-6 hidden">
+                <div id="techRestrictedWarning" class="hidden bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-rose-400 text-sm flex items-center space-x-3">
+                    <i class="fa-solid fa-lock text-lg"></i>
+                    <span><strong>Note:</strong> You are currently logged in as an Executive. Switch role to Field Technician at the top right to test the technician mobile field workflow.</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Technician Field Terminal</h2>
+                        <p class="text-sm text-slate-400">Clock into dispatches, record parts/labor, and execute extensive NFPA inspections.</p>
+                    </div>
+                </div>
+
+                <!-- Assigned Jobs for Tech -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-md font-bold text-white border-b border-slate-800 pb-3">Assigned Dispatches</h3>
+                        <div id="techJobList" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Active Inspection & Clock-in Panel -->
+                    <div id="activeJobWorkspace" class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                        <div class="text-center py-12 text-slate-500">
+                            <i class="fa-solid fa-helmet-safety text-4xl mb-3"></i>
+                            <p class="text-base font-medium">Select an assigned job from the left to start work, clock in, and complete inspections.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: QUOTES & INVOICING -->
+            <section id="tab-quotes" class="space-y-6 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Quotes & Invoicing Hub</h2>
+                        <p class="text-sm text-slate-400">Executive-only financial review and deficiency quote generation.</p>
+                    </div>
+                </div>
+
+                <div id="executiveQuotesContainer" class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- TAB 5: INVENTORY -->
+            <section id="tab-inventory" class="space-y-6 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Warehouse & Truck Inventory</h2>
+                        <p class="text-sm text-slate-400">Track parts, fire extinguisher stock, fusible links, and chemical suppressants.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs">
+                            <tr>
+                                <th class="p-3 rounded-l-xl">Part Number / Item</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3">Warehouse Stock</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 rounded-r-xl text-right">Unit Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr>
+                                <td class="p-3 font-medium text-white">AMEX Wet Chemical 1.5gal</td>
+                                <td class="p-3 text-slate-400">Kitchen Suppression</td>
+                                <td class="p-3">14 units</td>
+                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">In Stock</span></td>
+                                <td class="p-3 text-right font-semibold text-amber-400">$145.00</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-medium text-white">Fusible Link 360°F (UL Listed)</td>
+                                <td class="p-3 text-slate-400">Kitchen Suppression</td>
+                                <td class="p-3">4 units</td>
+                                <td class="p-3"><span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-xs font-semibold">Low Stock</span></td>
+                                <td class="p-3 text-right font-semibold text-amber-400">$28.50</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-medium text-white">ABC Dry Chemical Extinguisher 10lb</td>
+                                <td class="p-3 text-slate-400">Fire Extinguishers</td>
+                                <td class="p-3">22 units</td>
+                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">In Stock</span></td>
+                                <td class="p-3 text-right font-semibold text-amber-400">$62.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal: Create & Dispatch Job -->
+    <div id="newJobModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <h3 class="text-lg font-bold text-white">Create & Dispatch Service Ticket</h3>
+                <button onclick="closeNewJobModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleCreateJob(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Client & Facility Name</label>
+                    <input type="text" id="jobClient" required placeholder="e.g., Apple Valley Grill" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Inspection Type</label>
+                        <select id="jobType" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            <option value="Kitchen Hood System (NFPA 96 / 17A)">Kitchen Hood Suppression (NFPA 96/17A)</option>
+                            <option value="Fire Extinguishers (NFPA 10)">Fire Extinguishers (NFPA 10)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Assign Technician</label>
+                        <select id="jobTech" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            <option value="Kristopher Ramsey">Kristopher Ramsey (Lead Tech)</option>
+                            <option value="Marcus Vance">Marcus Vance</option>
+                            <option value="Dave Miller">Dave Miller</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Service Address / Notes</label>
+                    <input type="text" id="jobAddress" required placeholder="124 Valley Mall Blvd, Yakima, WA" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeNewJobModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Cancel</button>
+                    <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2 rounded-xl text-sm font-bold">Dispatch Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        let currentRole = 'executive';
+
+        // Mock database state
+        let jobs = [
+            {
+                id: 'JOB-101',
+                client: 'Selah Sports Bar & Grill',
+                type: 'Kitchen Hood System (NFPA 96 / 17A)',
+                tech: 'Kristopher Ramsey',
+                address: '108 W Main St, Selah, WA',
+                status: 'Dispatched', // Dispatched -> Clocked In -> Completed
+                clockedIn: false,
+                partsUsed: [],
+                laborHours: 0,
+                inspectionSubmitted: false,
+                deficienciesFound: false
+            },
+            {
+                id: 'JOB-102',
+                client: 'Yakima Valley Memorial Hospital Cafeteria',
+                type: 'Fire Extinguishers (NFPA 10)',
+                tech: 'Marcus Vance',
+                address: '2811 Tieton Dr, Yakima, WA',
+                status: 'Dispatched',
+                clockedIn: false,
+                partsUsed: [],
+                laborHours: 0,
+                inspectionSubmitted: false,
+                deficienciesFound: false
+            }
+        ];
+
+        function switchRole(role) {
+            currentRole = role;
+            document.getElementById('currentUserLabel').innerText = role === 'executive' ? 'Logged in as Executive' : 'Logged in as Field Tech';
+            document.getElementById('techRestrictedWarning').classList.toggle('hidden', role !== 'technician');
+            renderAll();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+                btn.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-slate-200');
+            });
+            const activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-slate-200');
+            activeBtn.classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+        }
+
+        function openNewJobModal() {
+            if(currentRole !== 'executive') {
+                alert('Access Denied: Only Executives and Schedulers can create and dispatch jobs.');
+                return;
+            }
+            document.getElementById('newJobModal').classList.remove('hidden');
+            document.getElementById('newJobModal').classList.add('flex');
+        }
+
+        function closeNewJobModal() {
+            document.getElementById('newJobModal').classList.add('hidden');
+            document.getElementById('newJobModal').classList.remove('flex');
+        }
+
+        function handleCreateJob(e) {
+            e.preventDefault();
+            const newJob = {
+                id: 'JOB-' + Math.floor(100 + Math.random() * 900),
+                client: document.getElementById('jobClient').value,
+                type: document.getElementById('jobType').value,
+                tech: document.getElementById('jobTech').value,
+                address: document.getElementById('jobAddress').value,
+                status: 'Dispatched',
+                clockedIn: false,
+                partsUsed: [],
+                laborHours: 0,
+                inspectionSubmitted: false
+            };
+            jobs.push(newJob);
+            closeNewJobModal();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderDashboardTable();
+            renderDispatchList();
+            renderTechJobList();
+            renderQuotesHub();
+        }
+
+        function renderDashboardTable() {
+            const tbody = document.getElementById('dashboardJobTable');
+            tbody.innerHTML = '';
+            jobs.forEach(job => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3 font-medium text-white">#${job.id}<br><span class="text-xs text-slate-400">${job.client}</span></td>
+                        <td class="p-3">${job.type}</td>
+                        <td class="p-3">${job.tech}</td>
+                        <td class="p-3"><span class="bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full text-xs font-semibold">${job.status}</span></td>
+                        <td class="p-3 text-right"><button onclick="switchTab('dispatch')" class="text-amber-400 hover:underline text-xs font-bold">Manage</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('stat-active-jobs').innerText = jobs.filter(j => j.status !== 'Completed').length;
+        }
+
+        function renderDispatchList() {
+            const container = document.getElementById('dispatchJobsList');
+            container.innerHTML = '';
+            jobs.forEach(job => {
+                container.innerHTML += `
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                        <div>
+                            <span class="text-xs text-amber-400 font-bold">#${job.id}</span>
+                            <h4 class="text-base font-bold text-white">${job.client}</h4>
+                            <p class="text-xs text-slate-400"><i class="fa-solid fa-location-dot mr-1"></i>${job.address} • <strong class="text-slate-300">${job.type}</strong></p>
+                            <p class="text-xs text-slate-400 mt-1">Assigned Tech: <span class="text-white font-medium">${job.tech}</span> | Status: <span class="text-amber-400">${job.status}</span></p>
+                        </div>
+                        <div>
+                            ${currentRole === 'executive' ? `<button onclick="cancelJob('${job.id}')" class="bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold">Cancel / Reassign</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTechJobList() {
+            const container = document.getElementById('techJobList');
+            container.innerHTML = '';
+            jobs.forEach(job => {
+                container.innerHTML += `
+                    <div onclick="selectTechJob('${job.id}')" class="bg-slate-950 border border-slate-800 p-4 rounded-xl cursor-pointer hover:border-amber-500/50 transition">
+                        <span class="text-xs text-amber-400 font-bold">#${job.id}</span>
+                        <h4 class="text-sm font-bold text-white">${job.client}</h4>
+                        <p class="text-xs text-slate-400 mt-1">${job.type}</p>
+                        <div class="mt-3 flex justify-between items-center">
+                            <span class="text-xs bg-slate-900 px-2 py-1 rounded text-slate-300">${job.status}</span>
+                            <span class="text-xs text-amber-400 font-bold">Open Workstation &rarr;</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function selectTechJob(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            const ws = document.getElementById('activeJobWorkspace');
+            
+            let inspectionFormHTML = '';
+            if (job.type.includes('Kitchen Hood')) {
+                inspectionFormHTML = `
+                    <div class="space-y-4 border-t border-slate-800 pt-4">
+                        <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Kitchen Suppression System Checklist (NFPA 96 / 17A)</h4>
+                        <div class="space-y-3 text-sm">
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Fusible links inspected and within 12-month replacement interval.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Remote manual pull station accessible, secured, and properly tagged.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Gas and electric fuel shut-off interlocks tested and verified functional.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Plenum, filters, and duct collars clean of grease buildup.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Nozzle alignment verified over appliances (fryers, griddles, ranges).</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Wet chemical cylinder pressure gauge in green zone; hydro test date valid.</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            } else {
+                inspectionFormHTML = `
+                    <div class="space-y-4 border-t border-slate-800 pt-4">
+                        <h4 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Fire Extinguisher Inspection Checklist (NFPA 10)</h4>
+                        <div class="space-y-3 text-sm">
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Pressure gauge reading in operational green range.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Safety pin and tamper seal intact and unobstructed.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Hose and nozzle free of cracking, blockage, or insect nesting.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Annual maintenance tag and 6-year internal examination dates verified.</span>
+                            </label>
+                            <label class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="checkbox" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Wall mounting bracket secure and extinguisher visible / unobstructed.</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+
+            ws.innerHTML = `
+                <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                    <div>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded font-bold">Active Ticket #${job.id}</span>
+                        <h3 class="text-xl font-bold text-white mt-1">${job.client}</h3>
+                        <p class="text-xs text-slate-400">${job.address} • ${job.type}</p>
+                    </div>
+                    <div>
+                        ${job.clockedIn ? 
+                            `<span class="bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-bold animate-pulse">Clocked In</span>` : 
+                            `<button onclick="clockIn('${job.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold">Clock Into Job</button>`
+                        }
+                    </div>
+                </div>
+
+                <!-- Labor & Parts Entry -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h5 class="text-xs font-bold text-slate-400 uppercase">Labor Hours</h5>
+                        <div class="flex items-center space-x-3">
+                            <input type="number" id="laborInput" value="${job.laborHours}" min="0" step="0.5" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white w-24">
+                            <button onclick="saveLabor('${job.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold">Save Hours</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h5 class="text-xs font-bold text-slate-400 uppercase">Parts / Equipment Used</h5>
+                        <div class="flex space-x-2">
+                            <select id="partSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white flex-1">
+                                <option value="Fusible Link 360F ($28.50)">Fusible Link 360°F ($28.50)</option>
+                                <option value="AMEX Wet Chemical 1.5gal ($145.00)">AMEX Wet Chemical 1.5gal ($145.00)</option>
+                                <option value="ABC Extinguisher 10lb ($62.00)">ABC Extinguisher 10lb ($62.00)</option>
+                            </select>
+                            <button onclick="addPart('${job.id}')" class="bg-amber-500 text-slate-950 px-3 py-2 rounded-lg text-xs font-bold">Add Part</button>
+                        </div>
+                        <div class="text-xs text-slate-400" id="partsListDisplay">
+                            Parts added: ${job.partsUsed.length > 0 ? job.partsUsed.join(', ') : 'None yet'}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extensive NFPA Inspection Checklist -->
+                ${inspectionFormHTML}
+
+                <!-- Deficiencies & Completion -->
+                <div class="space-y-3 border-t border-slate-800 pt-4">
+                    <h5 class="text-xs font-bold text-slate-400 uppercase">Deficiency Notes (If Any)</h5>
+                    <textarea id="deficiencyNotes" placeholder="Note any failed components or code violations requiring executive quote generation..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500 h-20"></textarea>
+                    
+                    <div class="flex justify-end space-x-3 pt-2">
+                        <button onclick="submitInspection('${job.id}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg">Submit Inspection & Finish Job</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function clockIn(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            job.clockedIn = true;
+            job.status = 'In Progress (Clocked In)';
+            selectTechJob(jobId);
+            renderDashboardTable();
+        }
+
+        function saveLabor(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            job.laborHours = parseFloat(document.getElementById('laborInput').value) || 0;
+            alert('Labor hours updated successfully.');
+        }
+
+        function addPart(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            const part = document.getElementById('partSelect').value;
+            job.partsUsed.push(part);
+            selectTechJob(jobId);
+        }
+
+        function submitInspection(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            job.status = 'Completed / Pending Executive Review';
+            job.inspectionSubmitted = true;
+            alert('Inspection submitted successfully and locked for executive review!');
+            switchTab('dashboard');
+            renderAll();
+        }
+
+        function renderQuotesHub() {
+            const container = document.getElementById('executiveQuotesContainer');
+            if(currentRole !== 'executive') {
+                container.innerHTML = `<div class="text-center py-12 text-rose-400"><i class="fa-solid fa-lock text-3xl mb-2"></i><p>Access Restricted: Field technicians cannot view or send quotes or financials.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white">Pending Deficiency Quotes & Approvals</h3>
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                        <div>
+                            <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded font-bold">QUOTE-501</span>
+                            <h4 class="text-base font-bold text-white mt-1">Selah Sports Bar & Grill</h4>
+                            <p class="text-xs text-slate-400">Required: Replace expired fusible links and recharge wet chemical line ($315.00)</p>
+                        </div>
+                        <div class="space-x-2">
+                            <button onclick="alert('Quote sent to client via email!')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold">Send Quote to Client</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function cancelJob(jobId) {
+            jobs = jobs.filter(j => j.id !== jobId);
+            renderAll();
+        }
+
+        // Initialize view
+        renderAll();
+    </script>
+</body>
+</html>
