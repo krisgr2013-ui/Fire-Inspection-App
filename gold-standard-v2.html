@@ -690,11 +690,7 @@
         cancelJob = function(id) { if (confirm('Remove this job from the dispatch queue?')) { originalCancel(id); persistGoldStandard(); } };
 
 
-        let inventory = [
-            {id:'GS-P001',name:'Wet chemical agent 1.5 gal (verify brand/model compatibility)',category:'Kitchen Suppression',qty:14,min:5},
-            {id:'GS-P002',name:'Fusible link assortment (verify temperature rating)',category:'Kitchen Suppression',qty:4,min:6},
-            {id:'GS-P003',name:'ABC dry chemical extinguisher 10 lb',category:'Fire Extinguishers',qty:22,min:5}
-        ];
+        let inventory = []; // No assumed stock quantities; enter verified opening counts.
         const originalPersistInventory = persistGoldStandard;
         persistGoldStandard = function() {
             originalPersistInventory();
@@ -730,6 +726,8 @@
             const job=jobs.find(j=>j.id===jobId);
             if(job) { job.partsUsed=job.partsUsed||[]; job.partsUsed.push(item.name); persistGoldStandard(); selectTechJob(jobId); renderInventory(); }
         };
+        const previousCancelJob = cancelJob;
+        cancelJob = function(id) { if(!confirm('Cancel and permanently remove this job from this device? Export a backup first if you need to retain its record.')) return; previousCancelJob(id); persistGoldStandard(); };
         const previousRenderAll = renderAll;
         renderAll = function() { previousRenderAll(); renderInventory(); };
 
@@ -752,7 +750,7 @@
             updateInspectionCounts();
         }
         function exportGoldStandardBackup() {
-            const payload = { app: 'Gold Standard', schemaVersion: 1, exportedAt: new Date().toISOString(), jobs };
+            const payload = { app: 'Gold Standard', schemaVersion: 1, exportedAt: new Date().toISOString(), jobs, inventory };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -766,9 +764,9 @@
             reader.onload = () => {
                 try {
                     const data = JSON.parse(reader.result);
-                    if (!data || data.app !== 'Gold Standard' || data.schemaVersion !== 1 || !Array.isArray(data.jobs)) throw new Error('This is not a supported Gold Standard backup.');
+                    if (!data || data.app !== 'Gold Standard' || data.schemaVersion !== 1 || !Array.isArray(data.jobs) || (data.inventory !== undefined && !Array.isArray(data.inventory))) throw new Error('This is not a supported Gold Standard backup.');
                     if (!confirm('Replace the jobs currently stored on this device with ' + data.jobs.length + ' backup record(s)? Export a backup first if you need to preserve the current data.')) return;
-                    jobs = data.jobs;
+                    jobs = data.jobs; inventory = data.inventory || [];
                     persistGoldStandard(); renderAll();
                     alert('Backup restored on this device.');
                 } catch (err) { alert('Backup could not be imported: ' + err.message); }
@@ -822,7 +820,8 @@
             const quotes = document.getElementById('stat-pending-quotes');
             if (quotes) quotes.textContent = pending + ' follow-up' + (pending === 1 ? '' : 's');
             const compliance = document.getElementById('stat-compliance-rate');
-            if (compliance) compliance.textContent = jobs.length ? Math.round(jobs.filter(j => j.inspectionSubmitted && !j.deficienciesFound).length / Math.max(1,jobs.filter(j => j.inspectionSubmitted).length) * 100) + '%*' : '—';
+            const submitted = jobs.filter(j => j.inspectionSubmitted);
+            if (compliance) compliance.textContent = submitted.length ? Math.round(submitted.filter(j => !j.deficienciesFound).length / submitted.length * 100) + '%*' : '—';
             const low = document.getElementById('stat-low-stock');
             if (low) low.textContent = 'Not configured';
         };
