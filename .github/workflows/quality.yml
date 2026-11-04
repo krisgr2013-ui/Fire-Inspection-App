@@ -5,15 +5,15 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  html-and-js:
+  app-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Validate HTML structure and JavaScript syntax
-        run: python .github/scripts/validate_app.py
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Build production bundle
+        run: npm run build
