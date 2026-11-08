@@ -1,0 +1,27 @@
+name: Gold Standard QA (manual only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+    environment: gold-standard-qa
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check QA files and deployment authorization
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -f staging/index.html || { echo "::error::Current V29.6 staging files are not present; refusing to deploy outdated app."; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing Cloudflare API token secret"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing Cloudflare account ID secret"; exit 1; }
+          if grep -R -E -l 'sk_live_|service_role' staging; then
+            echo "::error::Potential privileged secret detected in staging files"; exit 1
+          fi
+      - name: Publish isolated QA worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy --assets ./staging --name gold-standard-qa
