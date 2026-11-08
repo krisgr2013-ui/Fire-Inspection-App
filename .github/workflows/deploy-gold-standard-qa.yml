@@ -1,0 +1,44 @@
+name: Gold Standard QA deployment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+    environment: gold-standard-qa
+    steps:
+      - name: Check out isolated staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: gold-standard-staging-v29-6
+          persist-credentials: false
+      - name: Verify isolated QA release
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Cloudflare token missing"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Cloudflare account ID missing"; exit 1; }
+          ARCHIVE=staging/Gold-Standard-QA-Staging-Verified.zip
+          test -s "$ARCHIVE" || { echo "::error::QA ZIP missing"; exit 1; }
+          echo "ee978973836ada761cb80903eb4fd5ebb7ca73a1003e387fb18ae84cba738971  $ARCHIVE" | sha256sum --check
+          unzip -t "$ARCHIVE" >/dev/null
+          mkdir -p qa-release
+          unzip -q "$ARCHIVE" -d qa-release
+          test -s qa-release/staging/index.html
+          test -s qa-release/staging/config.js
+          test -s qa-release/staging/backend.js
+          grep -q 'zhhgbwxjyhypxzqqbcqu' qa-release/staging/config.js
+          grep -q 'billingEnabled: false' qa-release/staging/config.js
+          grep -q 'emailEnabled: false' qa-release/staging/config.js
+          if grep -R -E -l 'sk_live_|service_role' qa-release/staging; then
+            echo "::error::Privileged secret detected"; exit 1
+          fi
+      - name: Deploy QA worker only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy --assets ./qa-release/staging --name gold-standard-qa
