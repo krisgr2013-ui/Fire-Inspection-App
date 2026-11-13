@@ -1,0 +1,34 @@
+name: Smart Assistance browser QA
+on:
+  pull_request:
+    paths: ['qa/smart-assistance/**', '.github/workflows/smart-assistance-qa.yml']
+permissions:
+  contents: read
+jobs:
+  isolated-browser-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Reconstruct exact review artifact from public baseline
+        run: python3 qa/smart-assistance/prepare.py
+      - name: Install pinned test tools
+        working-directory: qa/smart-assistance
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install test browsers
+        working-directory: qa/smart-assistance
+        run: npx playwright install --with-deps chromium webkit
+      - name: DOM integration checks
+        run: node qa/smart-assistance/integration.cjs
+      - name: Browser tests with synthetic records and blocked external requests
+        run: |
+          python3 -m http.server 8766 --directory smart-release > /tmp/smart-http.log 2>&1 &
+          node qa/smart-assistance/browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smart-assistance-browser-results
+          path: test-results/
