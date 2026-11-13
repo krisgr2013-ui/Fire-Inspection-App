@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gold Standard</title>
+<script src="boot.js?v=29.8.11-trial1"></script>
+<style>html[data-gs-returning="1"] #splash{display:none!important}</style>
+<meta name="description" content="Field service software for fire extinguisher and kitchen suppression contractors.">
+<meta name="theme-color" content="#131920">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gold Standard">
+<link rel="manifest" href="manifest.webmanifest?v=17">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=17">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0..1,0&display=block">
+
+
+<link rel="stylesheet" href="styles.css?v=29.8.11-trial1">
+<script>(function(){try{const allowed=['gold','ocean','forest','plum','slate'];const v=localStorage.getItem('gs-user-accent')||'gold';if(allowed.includes(v))document.documentElement.dataset.gsAccent=v;}catch(e){}})();</script><link rel="stylesheet" href="smart-assistant.css?v=2">
+</head>
+<body>
+
+<div id="splash" aria-hidden="true">
+  <div class="sp-glow"></div>
+  <div class="sp-in">
+    <div class="sp-mark" id="sp-mark">
+      <img class="sp-logo" src="icons/gold-standard-approved-emblem.png?v=17" width="132" height="132" alt="Gold Standard fire extinguisher emblem">
+    </div>
+    <div class="sp-word" id="sp-word"><span class="sp-gold">GOLD</span> STANDARD</div>
+    <div class="sp-sub" id="sp-sub">SERVICE HUB</div>
+    <div class="sp-bar"><i></i></div>
+    <div class="sp-tag" id="sp-tag">Built for service techs by service techs</div>
+  </div>
+</div>
+<script>
+window.SPLASH_T0 = performance.now();
+(function () {
+  try {
+    var t = localStorage.getItem('gs-theme'); if (t === 'dark') document.getElementById('splash').classList.add('sp-dark');
+    var b = JSON.parse(localStorage.getItem('gs-brand') || 'null');
+    if (b && b.logo && /^(data:image\/|https:\/\/)/.test(b.logo) && location.search.indexOf('portal=') < 0) {
+      var m = document.getElementById('sp-mark'); m.innerHTML = ''; var img = new Image(); img.src = b.logo; img.alt = ''; img.className = 'sp-logo'; m.appendChild(img);
+      document.getElementById('sp-word').textContent = b.name || ''; document.getElementById('sp-word').classList.add('sp-name');
+      document.getElementById('sp-sub').textContent = 'POWERED BY GOLD STANDARD SERVICE HUB';
+      document.getElementById('sp-sub').classList.add('sp-pow');
+    }
+    if (b && /^#[0-9a-f]{6}$/i.test(b.color || '')) document.getElementById('splash').style.setProperty('--sp-c', b.color);
+  } catch (e) {}
+  setTimeout(function () { var s = document.getElementById('splash'); if (s) { s.classList.add('sp-out'); setTimeout(function () { s.remove(); }, 520); } }, 8500);
+})();
+</script>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span id="logo-slot"></span>
+      <div><div class="brand-name"><span class="gold">GOLD</span> STANDARD </div><div class="brand-sub">SERVICE HUB</div></div>
+    </div>
+    <div class="top-right">
+      <button type="button" id="sync" class="sync local" title="" data-act="syncRecovery" aria-label="Sync status and recovery"><i></i><span>This device</span></button>
+      <div class="modeswitch" role="group" aria-label="Workspace">
+        <button id="m-office" data-act="setMode" data-a="office" aria-pressed="true">Office</button>
+        <button id="m-field" data-act="setMode" data-a="field" aria-pressed="false">Field</button>
+      </div>
+      <button id="acct" class="acct" data-act="account" aria-label="Account" hidden>·</button>
+    </div>
+  </div>
+</header>
+<div class="frame">
+  <nav class="side" id="side" aria-label="Main"></nav>
+  <main id="view" tabindex="-1"></main>
+</div>
+<nav class="bottom" id="bottom" aria-label="Main"></nav>
+<div id="modal-root"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="vendor/supabase-2.45.4.js"></script>
+<script src="config.js"></script>
+<script src="backend.js?v=29.8.11-trial1"></script>
+<script src="workspace.js?v=29.8.11-trial1"></script>
+<script src="equipment-data.js?v=29.8.11-trial1"></script>
+<script src="equipment-reference.js?v=29.8.11-trial1"></script>
+<script src="guide-library.js?v=29.8.11-trial1"></script>
+<script src="app.js?v=29.8.11-trial1"></script>
+<script src="guide-interactions.js?v=29.8.11-trial1"></script>
+<script src="equipment-integration.js?v=29.8.11-trial1"></script>
+<script src="smart-assistant.js?v=2"></script>
+<script src="continuity.js?v=29.8.11-trial1"></script>
+
+</body>
+</html>
