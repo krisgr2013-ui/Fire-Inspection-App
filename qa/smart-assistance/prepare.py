@@ -4,7 +4,9 @@ source=Path(__file__).parent
 root=Path('smart-release');root.mkdir(exist_ok=True)
 for name,want in json.loads((source/'hashes.json').read_text()).items():
  p=root/name;p.parent.mkdir(parents=True,exist_ok=True)
- if name.startswith('smart-assistant.'):
+ if name.endswith('.html'):
+  raw=(source/'baseline'/name).read_bytes()
+ elif name.startswith('smart-assistant.'):
   raw=(source/Path(name).name).read_bytes()
  else:
   print('Fetching '+name,flush=True)
@@ -17,3 +19,4 @@ for name,want in json.loads((source/'hashes.json').read_text()).items():
  if hashlib.sha256(raw).hexdigest()!=want:raise SystemExit('Artifact hash mismatch: '+name)
  p.write_bytes(raw)
 print('Exact frontend artifact reconstructed and SHA-256 verified.')
+
