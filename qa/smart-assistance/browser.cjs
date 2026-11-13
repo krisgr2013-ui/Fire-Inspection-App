@@ -2,7 +2,7 @@ const {chromium,webkit}=require('playwright');const fs=require('fs');const asser
 const fixture=fs.readFileSync(__dirname+'/fixture.js','utf8');
 (async()=>{fs.mkdirSync('test-results',{recursive:true});let checks=0;
 for(const [engine,width] of [['chromium',360],['chromium',390],['chromium',768],['chromium',1440],['webkit',390]]){
- const browser=await ({chromium,webkit}[engine]).launch({headless:true});const context=await browser.newContext({viewport:{width,height:900}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const browser=await ({chromium,webkit}[engine]).launch({headless:true});const context=await browser.newContext({viewport:{width,height:900},isMobile:width<640,hasTouch:width<640});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',r=>r.request().url().startsWith('http://127.0.0.1:8766/')?r.continue():r.abort());
  await page.route('**/backend.js*',r=>r.fulfill({contentType:'application/javascript',body:`window.GSBackend={ready:new Promise(()=>{}),role:'admin',user:null,membership:{tech_id:'t1'},companyId:'qa'};`}));
  try{
@@ -18,7 +18,9 @@ for(const [engine,width] of [['chromium',360],['chromium',390],['chromium',768],
   await page.locator('#gs-smart-draft').fill('Draft retained through refresh.');await page.reload();await page.evaluate(fixture);await page.evaluate(()=>{document.getElementById('splash')?.remove();closeModal();window.GSBackend.user={id:'browser-fixture'};render();});assert.equal(await page.locator('#gs-smart-draft').inputValue(),'Draft retained through refresh.');checks++;
   await page.locator('#gs-smart-query').fill('Same-time');await page.waitForFunction(()=>document.querySelectorAll('.gs-smart-item').length===1);assert.match(await page.locator('.gs-smart-item').innerText(),/Same-time/);checks++;
   await page.locator('#gs-smart-query').fill('');await page.waitForFunction(()=>document.querySelectorAll('.gs-smart-item').length>1);
+  await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(100);await page.screenshot({path:`test-results/office-${engine}-${width}.png`,fullPage:true});
   await page.evaluate(()=>{document.activeElement?.blur();window.GSBackend.role='tech';ROLE='tech';S.jobs.j2.techIds=['other'];UI.mode='field';UI.view='field-assist';render();});assert.equal(await page.locator('#gs-smart-job option[value=j2]').count(),0);assert.equal(await page.locator('#gs-smart-mode option[value=office]').count(),0);checks++;
+  await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(100);
   await page.screenshot({path:`test-results/${engine}-${width}.png`,fullPage:true});assert.deepEqual(errors,[]);checks++;
   console.log(`PASS ${engine} ${width}px: layout, controls, draft review, unchanged result, offline/reconnect, refresh, search and roles.`);
  }catch(e){await page.screenshot({path:`test-results/FAILED-${engine}-${width}.png`,fullPage:true}).catch(()=>{});throw e;}
